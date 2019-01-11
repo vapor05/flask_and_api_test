@@ -15,7 +15,7 @@ class Item(Resource):
 		item = self.find_by_name(name)
 		if item:
 			return item, 200
-		return {'message': 'Item not found'}, 404
+		return {'message': 'Item not found'}, 200
 
 	@classmethod
 	def find_by_name(cls, name):
@@ -30,6 +30,28 @@ class Item(Resource):
 		if row:
 			return {'item': {'name': row[0], 'price': row[1]}}
 
+	@classmethod
+	def insert_new_item(cls, name, price):
+		connection = sqlite3.connect('data.db')
+		cursor = connection.cursor()
+
+		insert_query = "INSERT INTO items VALUES (?, ?)"
+		cursor.execute(insert_query,(name, price))
+
+		connection.commit()
+		connection.close()
+
+	@classmethod
+	def update_row(cls, item):
+		connection = sqlite3.connect('data.db')
+		cursor = connection.cursor()
+
+		update_query = "UPDATE items SET price=? WHERE name=?"
+		cursor.execute(update_query, (item['price'], item['name']))
+
+		connection.commit()
+		connection.close()
+		
 	def post(self, name):
 		if self.find_by_name(name):
 			return {'message': "An item with name '{}' already exists.".format(name)}, 400
@@ -37,32 +59,40 @@ class Item(Resource):
 		data = Item.parser.parse_args()
 		item = {'name': name, 'price': data['price']}
 
-		connection = sqlite3.connect('data.db')
-		cursor = connection.cursor()
-
-		insert_query = "INSERT INTO items VALUES (?, ?)"
-		cursor.execute(insert_query,(item['name'], item['price']))
-
-		connection.commit()
-		connection.close()
-
+		try:
+			self.insert_new_item(item['name'], item['price'])
+		except:
+			return {'message': 'An error occurred inserting the item'}, 500
 		return item, 201
 
 	def delete(self, name):
-		global items
-		items = list(filter(lambda x: x['name'] != name, items))
-		return {'message': 'Item delete'}
+		if self.find_by_name(name):
+			connection = sqlite3.connect('data.db')
+			cursor = connection.cursor()
+
+			delete_query = "DELETE FROM items WHERE name =?"
+			cursor.execute(delete_query, (name,))
+
+			connection.commit()
+			connection.close()
+			return {'message': 'Item deleted'}, 200
+		return {'message': "No Item with name '{}' exists".format(name)}, 200
 
 	def put(self, name):
 		data = Item.parser.parse_args()
-		item = next(filter(lambda x: x['name'] == name, items), None)
-		if item is None:
-			item = {'name': name, 'price': data['price']}
-			items.append(item)
-		else:
-			item.update(data)
-		return item
+		item = {'name': name, 'price': data['price']}
 
+		if self.find_by_name(name) is None:
+			try:
+				self.insert_new_item(item['name'], item['price'])
+			except:
+				return {'message': 'An error occurred inserting the item'}, 500
+		else:
+			try:
+				self.update_row(item)
+			except:
+				return {'message': 'An error occurred updating the item'}, 500
+		return item
 
 class ItemList(Resource):
 	def get(self):
