@@ -51,7 +51,7 @@ class Item(Resource):
 
 		connection.commit()
 		connection.close()
-		
+
 	def post(self, name):
 		if self.find_by_name(name):
 			return {'message': "An item with name '{}' already exists.".format(name)}, 400
@@ -96,4 +96,12 @@ class Item(Resource):
 
 class ItemList(Resource):
 	def get(self):
+		connection = sqlite3.connect('data.db')
+		cursor = connection.cursor()
+
+		all_query = "SELECT * FROM items"
+		result = cursor.execute(all_query)
+		items = []
+		for row in result:
+			items.append({'name': row[0], 'price': row[1]})
 		return {'items': items}
