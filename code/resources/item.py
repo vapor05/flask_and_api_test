@@ -19,6 +19,7 @@ class Item(Resource):
 			return item.json(), 200
 		return {'message': 'Item not found'}, 200
 
+	@jwt_required()
 	def post(self, name):
 		if ItemModel.find_by_name(name):
 			return {'message': "An item with name '{}' already exists.".format(name)}, 400
@@ -32,6 +33,7 @@ class Item(Resource):
 			return {'message': 'An error occurred inserting the item'}, 500
 		return item.json(), 201
 
+	@jwt_required()
 	def delete(self, name):
 		if ItemModel.find_by_name(name):
 			connection = sqlite3.connect('data.db')
@@ -45,6 +47,7 @@ class Item(Resource):
 			return {'message': 'Item deleted'}, 200
 		return {'message': "No Item with name '{}' exists".format(name)}, 200
 
+	@jwt_required()
 	def put(self, name):
 		data = Item.parser.parse_args()
 
@@ -65,6 +68,7 @@ class Item(Resource):
 
 
 class ItemList(Resource):
+	@jwt_required()
 	def get(self):
 		connection = sqlite3.connect('data.db')
 		cursor = connection.cursor()
