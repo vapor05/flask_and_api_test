@@ -1,0 +1,10 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# sqlite3 database files
+*.db
+
+# venv environment folder
+venv/
